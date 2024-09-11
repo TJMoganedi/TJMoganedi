@@ -1,0 +1,115 @@
+// Resource class: represents various types of academic materials
+class Resource {
+public:
+    // Pure virtual functions to be implemented by derived classes
+    virtual std::string getTitle() const = 0;
+    virtual std::string getAuthor() const = 0;
+    virtual std::string getISBN() const = 0;
+    virtual std::string getType() const = 0;
+};
+
+// Book class: inherits from Resource
+class Book : public Resource {
+private:
+    std::string title;
+    std::string author;
+    std::string isbn;
+public:
+    // Constructor to initialize book properties
+    Book(const std::string& title, const std::string& author, const std::string& isbn)
+        : title(title), author(author), isbn(isbn) {}
+    // Implement getTitle() function
+    std::string getTitle() const override { return title; }
+    // Implement getAuthor() function
+    std::string getAuthor() const override { return author; }
+    // Implement getISBN() function
+    std::string getISBN() const override { return isbn; }
+    // Implement getType() function
+    std::string getType() const override { return "Book"; }
+};
+
+// Catalog class: manages the resource collection
+class Catalog {
+private:
+    // STL container to store unique pointers to resources
+    std::vector<std::unique_ptr<Resource>> resources;
+public:
+    // Add a new resource to the catalog
+    void addResource(std::unique_ptr<Resource> resource) { resources.push_back(std::move(resource)); }
+    // Remove a resource from the catalog by ISBN
+    void removeResource(const std::string& isbn) {
+        resources.erase(std::remove_if(resources.begin(), resources.end(),
+            [&isbn](const auto& resource) { return resource->getISBN() == isbn; }),
+            resources.end());
+    }
+    // Search for resources by multiple criteria
+    std::vector<Resource*> searchResources(const std::string& title = "", const std::string& author = "",
+        const std::string& isbn = "", const std::string& type = "") {
+        std::vector<Resource*> result;
+        for (auto& resource : resources) {
+            if ((title.empty() || resource->getTitle() == title) &&
+                (author.empty() || resource->getAuthor() == author) &&
+                (isbn.empty() || resource->getISBN() == isbn) &&
+                (type.empty() || resource->getType() == type)) {
+                result.push_back(resource.get());
+            }
+        }
+        return result;
+    }
+    // Generate a report of all resources, grouped by type
+    void generateReport() {
+        std::map<std::string, std::vector<Resource*>> report;
+        for (auto& resource : resources) {
+            report[resource->getType()].push_back(resource.get());
+        }
+        for (auto& pair : report) {
+            std::cout << pair.first << ":\n";
+            for (auto& resource : pair.second) {
+                std::cout << "Title: " << resource->getTitle() << ", Author: " << resource->getAuthor()
+                    << ", ISBN: " << resource->getISBN() << "\n";
+            }
+        }
+    }
+};
+
+// Command-line interface
+int main() {
+    Catalog catalog;
+    while (true) {
+        std::cout << "1. Add resource\n2. Remove resource\n3. Search resources\n4. Generate report\n5. Exit\n";
+        int choice;
+        std::cin >> choice;
+        switch (choice) {
+        case 1: {
+            std::string title, author, isbn;
+            std::cout << "Enter title: ";
+            std::cin >> title;
+            std::cout << "Enter author: ";
+            std::cin >> author;
+            std::cout << "Enter ISBN: ";
+            std::cin >> isbn;
+            catalog.addResource(std::make_unique<Book>(title, author, isbn));
+            break;
+        }
+        case 2: {
+            std::string isbn;
+            std::cout << "Enter ISBN: ";
+            std::cin >> isbn;
+            catalog.removeResource(isbn);
+            break;
+        }
+        case 3: {
+            std::string title, author, isbn, type;
+            std::cout << "Enter title: ";
+            std::cin >> title;
+            std::cout << "Enter author: ";
+            std::cin >> author;
+            std::cout << "Enter ISBN: ";
+            std::cin >> isbn;
+            std::cout << "Enter type: ";
+            std::cin >> type;
+            auto resources = catalog.searchResources(title, author, isbn, type);
+            for (auto& resource : resources) {
+                std::cout << "Title: " << resource->getTitle() << ", Author: " << resource->getAuthor()
+                    << ", ISBN: " << resource->getISBN() << "\n";
+            }
